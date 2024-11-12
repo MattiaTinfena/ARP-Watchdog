@@ -8,76 +8,46 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <signal.h>
 
-int main(int argc, char *argv[])
-{
+
+FILE *logfile;
+
+// Handler per SIGUSR1
+void sig_handler(int signo) {
+    if (signo == SIGUSR1) {
+        fprintf(logfile, "Received SIGUSR1 by process: %d\n", getpid());
+        fflush(logfile);
+    }
+}
+
+int main() {
+
     // Initialize ncurses
     initscr();
     cbreak();
     noecho();
     nodelay(stdscr, TRUE); // Non-blocking getch
 
-    // Reset the log file at the beginning
-    FILE *logfile = fopen("/home/mattia/Desktop/arp/ARP-Watchdog/logfile.txt", "w");
-    if (logfile == NULL) {
-        perror("fopen");
-        endwin(); // End ncurses mode
-        return 1;
-    }
-    fclose(logfile);
-
-    pid_t pid = getpid();
+    // Apri il file di log
     logfile = fopen("/home/mattia/Desktop/arp/ARP-Watchdog/logfile.txt", "a");
     if (logfile == NULL) {
         perror("fopen");
         return 1;
     }
 
-    int random_fd = open("/dev/urandom", O_RDONLY);
-    if (random_fd == -1) {
-        perror("open");
-        fclose(logfile);
-        return 1;
-    }
+    // Stampa messaggio iniziale
+    printw("Hello, I'm the process with PID %d.\n", getpid());
+    refresh();
 
-    unsigned int random_value;
-    if (read(random_fd, &random_value, sizeof(random_value)) != sizeof(random_value)) {
-        perror("read");
-        close(random_fd);
-        fclose(logfile);
-        return 1;
-    }
-
-    int sleep_time = random_value % 10; // Random sleep time between 0 and 9 seconds
-    
-    printw("Hello, I'm the watchdog process with PID %d. Press 'q' to pause\n", pid);
-    
+    // Imposta il signal handler per SIGUSR1
+    signal(SIGUSR1, sig_handler);
+    // Ciclo principale
     while (1) {
-        // Non-blocking getch
-        time_t now = time(NULL);
-        char *time_str = ctime(&now);
-        time_str[strlen(time_str) - 1] = '\0'; // Remove the newline character
-
-        fprintf(logfile, "PID: %d, Time: %s, Delay: %d\n", pid, time_str, sleep_time);
-        fflush(logfile);
-        timeout(0); // Non-blocking getch
-        int ch = getch();
-        if (ch == 'q') {
-            while (1) {
-                // Restore blocking getch
-                printw("Press s to resume\n");
-                int ch = getch();
-                if (ch == 's') {
-                    break;
-                }
-                usleep(100000); // Sleep for 100ms to avoid busy waiting
-            }
-        }
-        sleep(sleep_time);
+        pause(); // Attende i segnali in modo efficiente
     }
 
     endwin(); // End ncurses mode
-    close(random_fd);
     fclose(logfile);
     return 0;
 }

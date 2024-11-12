@@ -10,59 +10,38 @@
 #include <sys/wait.h>
 #include <signal.h>
 
-int period = 10;        // period after which the check is done
 
-// define process monitored variables
 #define MAX_PROCESSES 3
 pid_t monitored_pids[MAX_PROCESSES];
+int period = 10; // Periodo di controllo in secondi
 
-void handler(int signal_number) {
-    period--;
-    printf("%d", period);
-    fflush(stdout);
-    if (period == 0) {
-        for (int i = 0; i < MAX_PROCESSES; i++)
-            printf("Checking if process still alive %d", monitored_pids[i]);
-            fflush(stdout);
-            /* if (check if it is running ){
-
-            } else {
-
-            } */
-        period = 10;
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s pid1 pid2 pid3\n", argv[0]);
+        return 1;
     }
 
-}
+    // Assegna i PID dei processi monitorati
+    for (int i = 1; i < argc && i <= MAX_PROCESSES; i++) {
+        monitored_pids[i - 1] = atoi(argv[i]);
+    }
 
-int main(int argc, char *argv[])
-{
-    printf( "watchdog: %d\n", getpid());
-    char *pids_str = getenv("MONITORED_PIDS");
-
-    if (pids_str != NULL) {
-
-        char *token = strtok(pids_str, ",");
-
-        /*
-        while (token != NULL) {
-
-            monitored_pids[num_monitored_processes++] = token;
-
-            token = strtok(NULL, ",");
-
+    // Avvio del ciclo di controllo periodico
+    while (1) {
+        sleep(period); // Pausa tra i controlli
+        for (int i = 0; i < MAX_PROCESSES; i++) {
+            if (monitored_pids[i] != 0) {
+                // Invia SIGUSR1 e verifica la risposta
+                printf("monitored_pid[%d]: %d, result kill %d, SIGUSR1: %d\n", i, monitored_pids[i], kill(monitored_pids[i], SIGUSR1), SIGUSR1);
+                if (kill(monitored_pids[i], SIGUSR1) == -1) {
+                    printf("Process %d is not responding or has terminated\n", monitored_pids[i]);
+                    monitored_pids[i] = 0; // Imposta il PID a 0 per ignorare in futuro
+                } else {
+                    printf("Sent SIGUSR1 to process %d\n", monitored_pids[i]);
+                }
+            }
         }
-        */
-
     }
-    
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = &handler;
 
-    while(1) {
-        sigaction (SIGUSR1, &sa, NULL);
-        sleep(1);
-    }
-    
     return 0;
 }

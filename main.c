@@ -35,8 +35,7 @@ int main() {
             }
         }
     }
-
-    // Fork per blackBoard
+    
     pid_t pidwd = fork();
 
     if (pidwd < 0) {
@@ -44,10 +43,15 @@ int main() {
         exit(1);
     } 
     else if (pidwd == 0) { 
-        // Definiamo gli argomenti per blackBoard
+    
         
-        char *args[] = {"konsole", "-e","./watchdog", NULL };
-        args[0] = "konsole";
+        char *args[PROCESSNUM + 2];
+        args[0] = "./watchdog";
+        for (int i = 0; i < PROCESSNUM; i++) {
+            args[i + 1] = malloc(10);
+            snprintf(args[i + 1], 10, "%d", pids[i]);
+        }
+        args[PROCESSNUM + 1] = NULL;
         // Eseguiamo blackBoard
         if (execvp(args[0], args) == -1) {
             perror("Errore in execvp per watchdog");
