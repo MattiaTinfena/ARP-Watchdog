@@ -11,6 +11,7 @@
 #include <signal.h>
 
 
+
 FILE *logfile;
 
 // Handler per SIGUSR1
@@ -40,11 +41,13 @@ int main() {
     printw("Hello, I'm the process with PID %d.\n", getpid());
     refresh();
 
-    // Imposta il signal handler per SIGUSR1
-    signal(SIGUSR1, sig_handler);
-    // Ciclo principale
+    fprintf(logfile, "%d,", getpid());
+    fflush(logfile); // Attende i segnali in modo efficiente
+    
+    signal(SIGUSR1, sig_handler); 
+
     while (1) {
-        pause(); // Attende i segnali in modo efficiente
+        pause();
     }
 
     endwin(); // End ncurses mode

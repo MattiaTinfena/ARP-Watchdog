@@ -26,6 +26,7 @@ int main() {
         } 
         // va a buon fine
         else if (pids[i] == 0) { // Processo figlio
+             printf("Processo figlio %d, PID: %d\n", i, getpid());
             char *args[] = {"konsole", "-e","./p", NULL }; // Array di argomenti per execvp
 
             args[0] = "konsole";
@@ -50,6 +51,7 @@ int main() {
         for (int i = 0; i < PROCESSNUM; i++) {
             args[i + 1] = malloc(10);
             snprintf(args[i + 1], 10, "%d", pids[i]);
+            printf("args[%d]: %s\n", i + 1, args[i + 1]);
         }
         args[PROCESSNUM + 1] = NULL;
         // Eseguiamo blackBoard
